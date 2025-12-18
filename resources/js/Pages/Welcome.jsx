@@ -1,0 +1,112 @@
+import React, { useState, useRef } from 'react';
+import { Head, router } from '@inertiajs/react';
+import CosmicLayout from '@/Layouts/CosmicLayout';
+import { Canvas, useFrame } from '@react-three/fiber';
+import { Stars } from '@react-three/drei';
+import { motion, AnimatePresence } from 'framer-motion';
+import * as THREE from 'three';
+
+// 1. The Warp Star System
+const WarpStars = ({ isWarping }) => {
+    const ref = useRef();
+    
+    useFrame((state, delta) => {
+        // Normal Rotation
+        if (!isWarping) {
+            ref.current.rotation.y += delta * 0.1;
+            ref.current.rotation.x += delta * 0.05;
+        } 
+        // WARP SPEED: Stretch and Zoom
+        else {
+            ref.current.rotation.z += delta * 2; // Spin
+            ref.current.position.z += delta * 50; // Fly forward
+        }
+    });
+
+    return (
+        <group ref={ref}>
+            <Stars radius={100} depth={50} count={6000} factor={4} saturation={0} fade speed={1} />
+        </group>
+    );
+};
+
+export default function Welcome() {
+    const [isWarping, setWarping] = useState(false);
+
+    const handleStart = (e) => {
+        e.preventDefault();
+        setWarping(true);
+        
+        // Wait 1.5 seconds for the warp animation, then navigate
+        setTimeout(() => {
+            router.visit(route('login'));
+        }, 1500);
+    };
+
+    return (
+        <div className="w-screen h-screen overflow-hidden bg-black">
+            <CosmicLayout>
+                <Head title="Welcome" />
+
+                {/* 3D Scene */}
+                <div className="absolute inset-0 z-0">
+                    <Canvas camera={{ position: [0, 0, 10], fov: 60 }}>
+                        <WarpStars isWarping={isWarping} />
+                        {/* Add motion blur streaks during warp (simulated by opacity) */}
+                        {isWarping && <fog attach="fog" args={['#ffffff', 0, 20]} />}
+                    </Canvas>
+                </div>
+
+                {/* Warp Overlay (Fade to White) */}
+                <AnimatePresence>
+                    {isWarping && (
+                        <motion.div 
+                            initial={{ opacity: 0 }}
+                            animate={{ opacity: 1 }}
+                            duration={1.5}
+                            className="absolute inset-0 bg-white z-[9999]"
+                        />
+                    )}
+                </AnimatePresence>
+
+                {/* UI Content */}
+                {!isWarping && (
+                    <motion.div 
+                        exit={{ opacity: 0, scale: 2 }}
+                        transition={{ duration: 0.5 }}
+                        className="relative z-10 flex flex-col items-center justify-center h-screen"
+                    >
+                        <motion.h1 
+                            initial={{ letterSpacing: "1em", opacity: 0 }}
+                            animate={{ letterSpacing: "0.2em", opacity: 1 }}
+                            transition={{ duration: 2, ease: "easeOut" }}
+                            className="text-7xl md:text-9xl font-bold font-mono text-transparent bg-clip-text bg-gradient-to-b from-blue-100 to-transparent"
+                        >
+                            STELLARIS
+                        </motion.h1>
+
+                        <motion.p 
+                            initial={{ opacity: 0 }}
+                            animate={{ opacity: 1 }}
+                            transition={{ delay: 1 }}
+                            className="text-blue-300 font-mono tracking-widest mt-4 uppercase text-sm"
+                        >
+                            Deep Space Exploration Terminal
+                        </motion.p>
+
+                        <motion.button
+                            onClick={handleStart}
+                            initial={{ opacity: 0, y: 20 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            whileHover={{ scale: 1.05 }}
+                            transition={{ delay: 1.5 }}
+                            className="mt-12 px-10 py-4 bg-white/5 border border-white/20 rounded-full text-white font-mono tracking-widest hover:bg-blue-500 hover:border-blue-500 hover:shadow-[0_0_40px_rgba(59,130,246,0.5)] transition-all duration-300"
+                        >
+                            ENGAGE WARP DRIVE
+                        </motion.button>
+                    </motion.div>
+                )}
+            </CosmicLayout>
+        </div>
+    );
+}

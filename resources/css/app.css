@@ -1,0 +1,8 @@
+@import "tailwindcss";
+
+@theme {
+    --color-space: #030508;
+    --color-starlight: #E2E8F0;
+    --font-sans: 'Exo 2', sans-serif;
+    --font-mono: 'Rajdhani', monospace;
+}
