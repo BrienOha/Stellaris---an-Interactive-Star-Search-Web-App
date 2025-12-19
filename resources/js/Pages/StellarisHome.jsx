@@ -49,7 +49,8 @@ const CommanderProfile = ({ auth, onClose }) => (
     </motion.div>
 );
 
-export default function StellarisHome({ sidebarList, searchedStar, userNotes, auth, errors, isNewDiscovery }) {
+// Added 'constellationGroups' to props
+export default function StellarisHome({ sidebarList, constellationGroups, searchedStar, userNotes, auth, errors, isNewDiscovery }) {
     const [selectedStar, setSelectedStar] = useState(null);
     const [showCaptain, setShowCaptain] = useState(false);
     const [showProfile, setShowProfile] = useState(false);
@@ -59,12 +60,18 @@ export default function StellarisHome({ sidebarList, searchedStar, userNotes, au
     const musicRef = useRef(null);
 
     const { data, setData, get, processing } = useForm({ query: '' });
+    
 
     // 1. Initialize Audio
     useEffect(() => {
         musicRef.current = new Audio('/audio/space_ambient.mp3'); 
         musicRef.current.loop = true;
         musicRef.current.volume = 0.4; 
+
+        // Attempt Auto-play
+        musicRef.current.play()
+            .then(() => setAudioEnabled(true))
+            .catch(e => console.log("Auto-play blocked, waiting for interaction"));
 
         return () => { 
             if(musicRef.current) {
@@ -124,6 +131,9 @@ export default function StellarisHome({ sidebarList, searchedStar, userNotes, au
     };
 
     const currentNote = selectedStar && userNotes ? userNotes[selectedStar.name] : null;
+
+    // Sort constellations alphabetically for display
+    const sortedConstellations = constellationGroups ? Object.keys(constellationGroups).sort() : [];
 
     return (
         <CosmicLayout>
@@ -197,16 +207,17 @@ export default function StellarisHome({ sidebarList, searchedStar, userNotes, au
                     </div>
                 </div>
 
-                {/* 3. Left Sliding Sidebar 
-                    FIX: Added pointer-events-none to container, pointer-events-auto to inner content.
-                    This prevents the invisible container space from blocking clicks on the Audio button.
-                */}
-                <div className="fixed left-5 top-24 bottom-6 z-40 flex items-center pointer-events-none">
+                {/* 3. Left Sliding Sidebar (Updated for Constellation Sorting) */}
+                <div className="fixed left-10 top-24 bottom-6 z-40 flex items-center pointer-events-none">
                     <div className="w-72 h-full bg-[#050714]/90 backdrop-blur-xl border-r border-blue-500/50 shadow-[0_0_30px_rgba(59,130,246,0.2)] transform -translate-x-[17.5rem] hover:translate-x-0 transition-transform duration-500 ease-[cubic-bezier(0.25,1,0.5,1)] flex flex-col overflow-hidden group pointer-events-auto">
+                        
+                        {/* Tab Label (Hidden until hover) */}
                         <div className="absolute right-0 top-0 bottom-0 w-3 bg-blue-900/20 hover:bg-blue-600/20 cursor-pointer flex items-center justify-center transition-colors">
                             <div className="h-16 w-1 bg-blue-400/50 rounded-full shadow-[0_0_10px_#60a5fa] group-hover:bg-blue-300 transition-all"></div>
                             <div className="absolute top-1/2 -right-8 transform -rotate-90 origin-center text-[10px] font-mono tracking-[0.3em] text-blue-400 opacity-100 group-hover:opacity-0 transition-opacity w-32 text-center">DATABASE</div>
                         </div>
+
+                        {/* Sidebar Header */}
                         <div className="p-5 border-b border-blue-500/20 bg-blue-900/10 shrink-0 opacity-0 group-hover:opacity-100 transition-opacity duration-300 delay-100">
                             <h3 className="font-mono text-blue-300 tracking-widest uppercase text-sm flex items-center gap-2">
                                 <span className="text-xl">ST</span> Discovered Stars
@@ -215,17 +226,38 @@ export default function StellarisHome({ sidebarList, searchedStar, userNotes, au
                                 Local Database // {sidebarList.length} Records
                             </p>
                         </div>
-                        <div className="flex-1 overflow-y-auto p-2 space-y-1 custom-scrollbar opacity-0 group-hover:opacity-100 transition-opacity duration-300 delay-150">
-                            {sidebarList.map((starName, i) => (
-                                <button
-                                    key={i}
-                                    onClick={() => clickSuggestion(starName)}
-                                    className="w-full text-left px-4 py-3 rounded border border-transparent hover:bg-blue-500/20 hover:border-blue-500/30 text-gray-400 hover:text-white transition-all font-mono text-sm tracking-wider uppercase group/item flex justify-between items-center"
-                                >
-                                    <span>{starName}</span>
-                                    <span className="text-blue-500 opacity-0 group-hover/item:opacity-100 text-xs">→</span>
-                                </button>
+
+                        {/* Sidebar Content: Grouped by Constellation */}
+                        <div className="flex-1 overflow-y-auto p-2 space-y-4 custom-scrollbar opacity-0 group-hover:opacity-100 transition-opacity duration-300 delay-150">
+                            {sortedConstellations.map((constellation) => (
+                                <div key={constellation} className="mb-2">
+                                    {/* Constellation Header */}
+                                    <div className="px-4 py-1 text-[10px] text-blue-300/50 font-mono tracking-[0.2em] uppercase border-b border-blue-500/10 mb-1">
+                                        {constellation || 'UNKNOWN SECTOR'}
+                                    </div>
+                                    
+                                    {/* Stars in this Constellation */}
+                                    <div className="space-y-1">
+                                        {constellationGroups[constellation].map((star, i) => (
+                                            <button
+                                                key={star.id || i}
+                                                onClick={() => clickSuggestion(star.name)}
+                                                className="w-full text-left pl-6 pr-4 py-2 rounded border border-transparent hover:bg-blue-500/20 hover:border-blue-500/30 text-gray-400 hover:text-white transition-all font-mono text-sm tracking-wider uppercase group/item flex justify-between items-center"
+                                            >
+                                                <span>{star.name}</span>
+                                                <span className="text-blue-500 opacity-0 group-hover/item:opacity-100 text-xs">→</span>
+                                            </button>
+                                        ))}
+                                    </div>
+                                </div>
                             ))}
+
+                            {/* Empty State */}
+                            {sortedConstellations.length === 0 && (
+                                <div className="p-4 text-center text-gray-500 text-xs font-mono">
+                                    NO DATA FOUND
+                                </div>
+                            )}
                         </div>
                     </div>
                 </div>
@@ -250,10 +282,8 @@ export default function StellarisHome({ sidebarList, searchedStar, userNotes, au
                      </div>
                 </div>
 
-                {/* 5. BOTTOM LEFT: AUDIO TOGGLE 
-                    FIX: Increased Z-index to 50 to ensure it floats above ambient layers if necessary.
-                */}
-                <div className="fixed bottom-8 left-16 z-50">
+                {/* 5. BOTTOM LEFT: AUDIO TOGGLE */}
+                <div className="fixed top-6 left-12 z-50">
                     <button
                         onClick={toggleMusic}
                         className={`
@@ -267,6 +297,19 @@ export default function StellarisHome({ sidebarList, searchedStar, userNotes, au
                         <span className="text-[10px] font-mono tracking-widest uppercase">
                             {audioEnabled ? 'Audio Uplink: ONLINE' : 'Audio Uplink: OFFLINE'}
                         </span>
+                    </button>
+                </div>
+
+                {/* 6. BOTTOM CENTER: LINK TO CONSTELLATION MAP (NEW) */}
+                <div className="absolute bottom-8 left-1/2 transform -translate-x-1/2 z-20">
+                    <button 
+                        onClick={() => router.visit(route('constellation.index'))}
+                        className="group relative px-8 py-3 bg-purple-900/20 border border-purple-500/30 rounded-full hover:bg-purple-800/40 transition-all duration-300 overflow-hidden"
+                    >
+                        <span className="relative z-10 font-mono text-xs tracking-[0.2em] text-purple-300 group-hover:text-white uppercase flex items-center gap-2">
+                             Search by Constellation by accessing Constellation Map
+                        </span>
+                        <div className="absolute inset-0 bg-purple-500/20 blur-md opacity-0 group-hover:opacity-100 transition-opacity"></div>
                     </button>
                 </div>
 

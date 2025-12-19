@@ -18,6 +18,11 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::delete('/chapter/{star_name}', [StarController::class, 'destroy'])->name('chapter.delete');
     Route::get('/star/search', [StarController::class, 'search'])->name('star.search');
     Route::post('/star/favorite', [StarController::class, 'toggleFavorite'])->name('star.favorite');
+
+    // --- NEW CONSTELLATION ROUTES ---
+    Route::get('/constellations', [StarController::class, 'constellationIndex'])->name('constellation.index');
+    Route::get('/constellation/search', [StarController::class, 'searchConstellation'])->name('constellation.search');
+    Route::post('/constellation/discover', [StarController::class, 'quickDiscover'])->name('constellation.discover');
 });
 
 // 3. Breeze Profile Routes

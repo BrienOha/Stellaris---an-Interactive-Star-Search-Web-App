@@ -59,8 +59,6 @@ class StarController extends Controller
                 $raw = $result[0];
                 
                 // --- FIX: CHECK DB AGAIN WITH API NAME ---
-                // The API might return "Sirius A, B" even if you searched "Sirius".
-                // We must check if "Sirius A, B" exists to prevent a Duplicate Entry crash.
                 $existingStar = DiscoveredStar::where('user_id', $user->id)
                                               ->where('name', $raw['name'])
                                               ->first();
@@ -77,8 +75,6 @@ class StarController extends Controller
                     ]);
                     $isNewDiscovery = true;
                 } else {
-                    // It existed, just under a slightly different name than the user typed.
-                    // Use the existing data.
                     $raw = $existingStar->toArray();
                     if(!isset($raw['distance_light_year'])) $raw['distance_light_year'] = $raw['distance_ly'];
                 }
@@ -110,6 +106,91 @@ class StarController extends Controller
             'isNewDiscovery' => $isNewDiscovery
         ]);
     }
+
+    // --- NEW CONSTELLATION METHODS START ---
+
+    public function constellationIndex()
+    {
+        $user = Auth::user();
+        // Get unique constellations found by the user
+        $constellations = DiscoveredStar::where('user_id', $user->id)
+                            ->select('constellation')
+                            ->distinct()
+                            ->whereNotNull('constellation')
+                            ->orderBy('constellation')
+                            ->pluck('constellation');
+
+        return Inertia::render('ConstellationMap', [
+            'sidebarList' => $constellations,
+            'auth' => ['user' => $user],
+            'searchedConstellation' => null,
+            'stars' => []
+        ]);
+    }
+
+    public function searchConstellation(Request $request, StarApiService $api)
+    {
+        $query = $request->input('query');
+        $user = Auth::user();
+
+        // Call API with 'constellation' parameter
+        $results = $api->fetchStars(['constellation' => $query]);
+
+        $constellations = DiscoveredStar::where('user_id', $user->id)
+                            ->select('constellation')
+                            ->distinct()
+                            ->orderBy('constellation')
+                            ->pluck('constellation');
+        
+        // Mark which stars are already discovered
+        $myStars = DiscoveredStar::where('user_id', $user->id)
+                    ->where('constellation', $query)
+                    ->pluck('name')
+                    ->toArray();
+
+        $processedStars = collect($results)->map(function($star) use ($myStars) {
+            $star['is_discovered'] = in_array($star['name'], $myStars);
+            $star['color'] = $this->getStarColor($star['spectral_class'] ?? 'G');
+            return $star;
+        });
+
+        return Inertia::render('ConstellationMap', [
+            'sidebarList' => $constellations,
+            'auth' => ['user' => $user],
+            'searchedConstellation' => $query,
+            'stars' => $processedStars
+        ]);
+    }
+
+    public function quickDiscover(Request $request)
+    {
+        $data = $request->validate([
+            'name' => 'required|string',
+            'constellation' => 'nullable|string',
+            'distance_light_year' => 'nullable', 
+            'spectral_class' => 'nullable|string'
+        ]);
+
+        $user = Auth::user();
+
+        $exists = DiscoveredStar::where('user_id', $user->id)
+                    ->where('name', $data['name'])
+                    ->exists();
+
+        if (!$exists) {
+            DiscoveredStar::create([
+                'user_id' => $user->id,
+                'name' => $data['name'],
+                'distance_ly' => $data['distance_light_year'] ?? 0,
+                'spectral_class' => $data['spectral_class'] ?? 'M',
+                'constellation' => $data['constellation'] ?? 'Unknown',
+                'discovered_by' => $user->name
+            ]);
+        }
+
+        return redirect()->back();
+    }
+    // --- NEW CONSTELLATION METHODS END ---
 
     public function toggleFavorite(Request $request)
     {
