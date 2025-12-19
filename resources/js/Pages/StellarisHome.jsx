@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import SpaceScene from '@/Components/SpaceScene';
 import StarDetails from '@/Components/StarDetails';
 import { Head, Link, useForm, router } from '@inertiajs/react';
@@ -53,14 +53,47 @@ export default function StellarisHome({ sidebarList, searchedStar, userNotes, au
     const [selectedStar, setSelectedStar] = useState(null);
     const [showCaptain, setShowCaptain] = useState(false);
     const [showProfile, setShowProfile] = useState(false);
+    
+    // --- AUDIO LOGIC ---
+    const [audioEnabled, setAudioEnabled] = useState(false);
+    const musicRef = useRef(null);
+
     const { data, setData, get, processing } = useForm({ query: '' });
+
+    // 1. Initialize Audio
+    useEffect(() => {
+        musicRef.current = new Audio('/audio/space_ambient.mp3'); 
+        musicRef.current.loop = true;
+        musicRef.current.volume = 0.4; 
+
+        return () => { 
+            if(musicRef.current) {
+                musicRef.current.pause();
+                musicRef.current.currentTime = 0;
+            }
+        };
+    }, []);
+
+    // 2. Toggle Function
+    const toggleMusic = () => {
+        if (!musicRef.current) return;
+
+        if (!audioEnabled) {
+            musicRef.current.play()
+                .then(() => setAudioEnabled(true))
+                .catch(e => console.error("Audio interaction needed:", e));
+        } else {
+            musicRef.current.pause();
+            setAudioEnabled(false);
+        }
+    };
 
     // Handle Search Results
     useEffect(() => {
         if (searchedStar) setSelectedStar(searchedStar);
     }, [searchedStar]);
 
-    // FIX: Handle Captain Message (Unique per user ID)
+    // Handle Captain Message
     useEffect(() => {
         const key = `captain_greeted_${auth.user.id}`;
         if (!sessionStorage.getItem(key)) {
@@ -72,6 +105,12 @@ export default function StellarisHome({ sidebarList, searchedStar, userNotes, au
         const key = `captain_greeted_${auth.user.id}`;
         sessionStorage.setItem(key, 'true');
         setShowCaptain(false);
+        
+        if (musicRef.current && !audioEnabled) {
+            musicRef.current.play()
+                .then(() => setAudioEnabled(true))
+                .catch(e => console.error("Auto-play blocked:", e));
+        }
     };
 
     const handleSearch = (e) => {
@@ -89,9 +128,10 @@ export default function StellarisHome({ sidebarList, searchedStar, userNotes, au
     return (
         <CosmicLayout>
             <Head title="Star Search" />
+            
             <div className="w-screen h-screen overflow-hidden bg-space text-white relative font-sans">
                 
-                {/* 1. 3D Scene (Empty Galaxy until searched) */}
+                {/* 1. 3D Scene */}
                 <div className="absolute inset-0 z-0">
                     <SpaceScene searchedStar={searchedStar} onStarSelect={setSelectedStar} />
                 </div>
@@ -112,7 +152,6 @@ export default function StellarisHome({ sidebarList, searchedStar, userNotes, au
                             </button>
                         </form>
 
-                        {/* SCI-FI ERROR MESSAGE */}
                         <AnimatePresence>
                             {errors.search && (
                                 <motion.div 
@@ -135,7 +174,6 @@ export default function StellarisHome({ sidebarList, searchedStar, userNotes, au
                             )}
                         </AnimatePresence>
 
-                        {/* NEW DISCOVERY NOTIFICATION */}
                         <AnimatePresence>
                             {isNewDiscovery && (
                                 <motion.div 
@@ -159,31 +197,42 @@ export default function StellarisHome({ sidebarList, searchedStar, userNotes, au
                     </div>
                 </div>
 
-                {/* 3. Left Sidebar (Stardex / Discovered Stars) */}
-                <motion.div initial={{ x: -300 }} animate={{ x: 0 }} className="absolute top-24 left-6 bottom-6 w-64 z-20 pointer-events-none">
-                    <div className="pointer-events-auto h-full bg-[#050714]/80 backdrop-blur-md border border-blue-500/20 rounded-lg flex flex-col overflow-hidden">
-                        <div className="p-4 border-b border-blue-500/20 bg-blue-900/10">
-                            <h3 className="font-mono text-blue-300 tracking-widest uppercase text-sm">Discovered Stars</h3>
-                            <p className="text-[10px] text-gray-500 mt-1">Global Database ({sidebarList.length} Records)</p>
+                {/* 3. Left Sliding Sidebar 
+                    FIX: Added pointer-events-none to container, pointer-events-auto to inner content.
+                    This prevents the invisible container space from blocking clicks on the Audio button.
+                */}
+                <div className="fixed left-5 top-24 bottom-6 z-40 flex items-center pointer-events-none">
+                    <div className="w-72 h-full bg-[#050714]/90 backdrop-blur-xl border-r border-blue-500/50 shadow-[0_0_30px_rgba(59,130,246,0.2)] transform -translate-x-[17.5rem] hover:translate-x-0 transition-transform duration-500 ease-[cubic-bezier(0.25,1,0.5,1)] flex flex-col overflow-hidden group pointer-events-auto">
+                        <div className="absolute right-0 top-0 bottom-0 w-3 bg-blue-900/20 hover:bg-blue-600/20 cursor-pointer flex items-center justify-center transition-colors">
+                            <div className="h-16 w-1 bg-blue-400/50 rounded-full shadow-[0_0_10px_#60a5fa] group-hover:bg-blue-300 transition-all"></div>
+                            <div className="absolute top-1/2 -right-8 transform -rotate-90 origin-center text-[10px] font-mono tracking-[0.3em] text-blue-400 opacity-100 group-hover:opacity-0 transition-opacity w-32 text-center">DATABASE</div>
                         </div>
-                        <div className="flex-1 overflow-y-auto p-2 space-y-1 custom-scrollbar">
+                        <div className="p-5 border-b border-blue-500/20 bg-blue-900/10 shrink-0 opacity-0 group-hover:opacity-100 transition-opacity duration-300 delay-100">
+                            <h3 className="font-mono text-blue-300 tracking-widest uppercase text-sm flex items-center gap-2">
+                                <span className="text-xl">ST</span> Discovered Stars
+                            </h3>
+                            <p className="text-[10px] text-gray-400 mt-1 font-mono">
+                                Local Database // {sidebarList.length} Records
+                            </p>
+                        </div>
+                        <div className="flex-1 overflow-y-auto p-2 space-y-1 custom-scrollbar opacity-0 group-hover:opacity-100 transition-opacity duration-300 delay-150">
                             {sidebarList.map((starName, i) => (
                                 <button
                                     key={i}
                                     onClick={() => clickSuggestion(starName)}
-                                    className="w-full text-left px-4 py-3 rounded hover:bg-blue-500/20 hover:border-l-2 hover:border-blue-400 text-gray-400 hover:text-white transition-all font-mono text-sm tracking-wider uppercase group"
+                                    className="w-full text-left px-4 py-3 rounded border border-transparent hover:bg-blue-500/20 hover:border-blue-500/30 text-gray-400 hover:text-white transition-all font-mono text-sm tracking-wider uppercase group/item flex justify-between items-center"
                                 >
-                                    {starName}
+                                    <span>{starName}</span>
+                                    <span className="text-blue-500 opacity-0 group-hover/item:opacity-100 text-xs">→</span>
                                 </button>
                             ))}
                         </div>
                     </div>
-                </motion.div>
+                </div>
 
                 {/* 4. Right Top (Profile & Logout) */}
                 <div className="absolute top-6 right-6 z-20 flex flex-col items-end gap-2">
-                     {/* Profile Button */}
-                     <button onClick={() => setShowProfile(true)} className="group flex items-center gap-3 bg-black/40 border border-blue-500/30 px-12 py-6  rounded hover:bg-blue-900/30 transition backdrop-blur-md">
+                     <button onClick={() => setShowProfile(true)} className="group flex items-center gap-3 bg-black/40 border border-blue-500/30 px-12 py-6 rounded hover:bg-blue-900/30 transition backdrop-blur-md">
                         <div className="text-right">
                             <span className="block text-[15px] text-blue-400 uppercase tracking-widest">Commander</span>
                             <span className="text-[20px] font-bold font-mono text-white group-hover:text-blue-200">{auth.user.name}</span>
@@ -199,6 +248,26 @@ export default function StellarisHome({ sidebarList, searchedStar, userNotes, au
                             Logout
                         </Link>
                      </div>
+                </div>
+
+                {/* 5. BOTTOM LEFT: AUDIO TOGGLE 
+                    FIX: Increased Z-index to 50 to ensure it floats above ambient layers if necessary.
+                */}
+                <div className="fixed bottom-8 left-16 z-50">
+                    <button
+                        onClick={toggleMusic}
+                        className={`
+                            flex items-center gap-3 px-5 py-3 rounded-full border backdrop-blur-md transition-all duration-300
+                            ${audioEnabled 
+                                ? 'bg-blue-900/40 border-blue-400 text-blue-300 shadow-[0_0_20px_rgba(59,130,246,0.3)]' 
+                                : 'bg-black/60 border-white/10 text-gray-500 hover:border-white/30 hover:text-gray-300'}
+                        `}
+                    >
+                        <span className="text-lg">{audioEnabled ? '🎵' : '🔇'}</span>
+                        <span className="text-[10px] font-mono tracking-widest uppercase">
+                            {audioEnabled ? 'Audio Uplink: ONLINE' : 'Audio Uplink: OFFLINE'}
+                        </span>
+                    </button>
                 </div>
 
                 {/* Modals & Panels */}

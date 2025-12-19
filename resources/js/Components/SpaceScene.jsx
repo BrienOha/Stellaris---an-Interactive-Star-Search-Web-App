@@ -100,7 +100,7 @@ export default function SpaceScene({ searchedStar, onStarSelect }) {
                 ) : (
                     // Default Empty State Label
                     <Billboard position={[0, 0, 0]}>
-                        <Text fontSize={2} color="#3b82f6" anchorX="center" anchorY="middle" fillOpacity={0.5}>
+                        <Text fontSize={2} color="#3b82f6" anchorX="center" anchorY="middle" fillOpacity={0.5} >
                             AWAITING TARGET COORDINATES... 
                         </Text>
                     </Billboard>
