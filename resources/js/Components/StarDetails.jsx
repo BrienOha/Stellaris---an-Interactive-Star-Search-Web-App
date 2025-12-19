@@ -52,7 +52,7 @@ export default function StarDetails({ star, userNote, onClose, auth }) {
                 {/* Close Button */}
                 <button 
                     onClick={onClose} 
-                    className="absolute top-6 right-6 text-blue-400/50 hover:text-white transition font-mono uppercase text-xs tracking-widest border border-transparent hover:border-blue-500/30 px-2 py-1 rounded"
+                    className="absolute top-1 right-4 text-blue-400/90 hover:text-white transition font-mono uppercase text-s tracking-widest border border-transparent hover:border-blue-500/30 px-2 py-1 rounded"
                 >
                     [ Close Terminal ]
                 </button>
