@@ -16,7 +16,7 @@ const CaptainsMessage = ({ userName, onClose }) => (
             <div className="font-sans text-gray-300 leading-relaxed space-y-4 text-lg">
                 <p> "Welcome back, Commander <span className="text-white font-bold">{userName}</span>." </p>
                 <p> Our long-range sensors are online. The local database is currently incomplete. </p>
-                <p> <strong className="text-white">Mission:</strong> Search for new star systems. If you find a star not in our records, it will be added to the Global Pokedex for all commanders to see. </p>
+                <p> <strong className="text-white">Mission:</strong> Search for new star systems. If you find a star not in our records, it will be added to the Global Stardex for all commanders to see. </p>
             </div>
             <button onClick={onClose} className="mt-8 w-full py-3 bg-blue-600 hover:bg-blue-500 text-white font-mono uppercase tracking-widest rounded transition">
                 Acknowledge & Begin Scanning
@@ -31,7 +31,7 @@ const CommanderProfile = ({ auth, onClose }) => (
         <div className="w-full max-w-md bg-[#050714] border border-blue-500/30 p-8 rounded-lg relative overflow-hidden">
             <button onClick={onClose} className="absolute top-4 right-4 text-blue-500 hover:text-white font-mono uppercase text-xs">[ Close ]</button>
             <div className="text-center mb-8">
-                <div className="w-24 h-24 bg-blue-900/20 rounded-full mx-auto mb-4 border-2 border-blue-500 flex items-center justify-center text-4xl">👨‍🚀</div>
+                <div className="w-24 h-24 bg-blue-900/20 rounded-full mx-auto mb-4 border-2 border-blue-500 flex items-center justify-center text-4xl">{auth.user.name.charAt(0)}</div>
                 <h2 className="text-2xl font-mono text-white tracking-widest uppercase">{auth.user.name}</h2>
                 <p className="text-blue-500 text-xs tracking-[0.3em] uppercase mt-1">Class A Commander</p>
             </div>
@@ -149,7 +149,7 @@ export default function StellarisHome({ sidebarList, searchedStar, userNotes, au
                                         <div>
                                             <p className="font-bold tracking-widest">NEW DATA ACQUIRED</p>
                                             <p className="mt-1">
-                                                Target added to the Global Pokedex. Nice work, Commander.
+                                                Target added to the Global Stardex. Nice work, Commander.
                                             </p>
                                         </div>
                                     </div>
@@ -159,7 +159,7 @@ export default function StellarisHome({ sidebarList, searchedStar, userNotes, au
                     </div>
                 </div>
 
-                {/* 3. Left Sidebar (Pokedex / Discovered Stars) */}
+                {/* 3. Left Sidebar (Stardex / Discovered Stars) */}
                 <motion.div initial={{ x: -300 }} animate={{ x: 0 }} className="absolute top-24 left-6 bottom-6 w-64 z-20 pointer-events-none">
                     <div className="pointer-events-auto h-full bg-[#050714]/80 backdrop-blur-md border border-blue-500/20 rounded-lg flex flex-col overflow-hidden">
                         <div className="p-4 border-b border-blue-500/20 bg-blue-900/10">
@@ -183,19 +183,19 @@ export default function StellarisHome({ sidebarList, searchedStar, userNotes, au
                 {/* 4. Right Top (Profile & Logout) */}
                 <div className="absolute top-6 right-6 z-20 flex flex-col items-end gap-2">
                      {/* Profile Button */}
-                     <button onClick={() => setShowProfile(true)} className="group flex items-center gap-3 bg-black/40 border border-blue-500/30 px-4 py-2 rounded hover:bg-blue-900/30 transition backdrop-blur-md">
+                     <button onClick={() => setShowProfile(true)} className="group flex items-center gap-3 bg-black/40 border border-blue-500/30 px-12 py-6  rounded hover:bg-blue-900/30 transition backdrop-blur-md">
                         <div className="text-right">
-                            <span className="block text-[10px] text-blue-400 uppercase tracking-widest">Commander</span>
-                            <span className="text-sm font-bold font-mono text-white group-hover:text-blue-200">{auth.user.name}</span>
+                            <span className="block text-[15px] text-blue-400 uppercase tracking-widest">Commander</span>
+                            <span className="text-[20px] font-bold font-mono text-white group-hover:text-blue-200">{auth.user.name}</span>
                         </div>
-                        <div className="w-8 h-8 rounded-full bg-blue-600/20 border border-blue-400 flex items-center justify-center text-xs">👨‍🚀</div>
+                        <div className="w-8 h-8 rounded-full bg-blue-600/20 border border-blue-400 flex items-center justify-center text-xs">{auth.user.name.charAt(0)}</div>
                      </button>
                      
                      <div className="flex gap-2">
-                        <Link href={route('observatory')} className="px-3 py-1 bg-black/60 border border-white/10 rounded hover:border-blue-400 text-[10px] font-mono tracking-widest uppercase text-gray-400 hover:text-white transition">
+                        <Link href={route('observatory')} className="px-10 py-5 bg-black/60 border border-white/10 rounded hover:border-blue-400 text-[15px] font-mono tracking-widest uppercase text-gray-400 hover:text-white transition">
                             Observatory
                         </Link>
-                        <Link href={route('logout')} method="post" as="button" className="px-3 py-1 bg-red-900/20 border border-red-500/20 rounded hover:bg-red-900/50 text-[10px] font-mono tracking-widest uppercase text-red-300 transition">
+                        <Link href={route('logout')} method="post" as="button" className="px-10 py-5 bg-red-900/20 border border-red-500/20 rounded hover:bg-red-900/50 text-[15px] font-mono tracking-widest uppercase text-red-300 transition">
                             Logout
                         </Link>
                      </div>

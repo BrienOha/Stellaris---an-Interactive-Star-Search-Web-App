@@ -17,6 +17,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::post('/chapter', [StarController::class, 'store'])->name('chapter.save');
     Route::delete('/chapter/{star_name}', [StarController::class, 'destroy'])->name('chapter.delete');
     Route::get('/star/search', [StarController::class, 'search'])->name('star.search');
+    Route::post('/star/favorite', [StarController::class, 'toggleFavorite'])->name('star.favorite');
 });
 
 // 3. Breeze Profile Routes

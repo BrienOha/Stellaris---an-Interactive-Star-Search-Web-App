@@ -3,7 +3,8 @@
 namespace App\Http\Controllers;
 
 use App\Http\Controllers\Controller;
-use App\Models\DiscoveredStar; 
+use App\Models\DiscoveredStar;
+use App\Models\StarNote;
 use App\Services\StarApiService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -13,27 +14,26 @@ class StarController extends Controller
 {
     public function index()
     {
-        // 1. Sidebar source: Only show stars discovered by THIS user
-        $discovered = DiscoveredStar::where('user_id', Auth::id())
-                        ->orderBy('name')
-                        ->pluck('name')
-                        ->toArray();
-        
-        // If empty (fresh install), provide a few starters
-        if (empty($discovered)) {
-            $discovered = ['Sirius', 'Vega']; 
-        }
-
-        /** @var \App\Models\User|null $user */
+        /** @var \App\Models\User $user */
         $user = Auth::user();
-        $notes = $user ? $user->notes()->get()->keyBy('star_name') : [];
+
+        $discoveredCollection = DiscoveredStar::where('user_id', $user->id)
+                                ->orderBy('name')
+                                ->get();
+
+        $constellationGroups = $discoveredCollection->groupBy('constellation');
+        $sidebarList = $discoveredCollection->pluck('name')->toArray();
+
+        $favorites = $user->notes()->where('is_favorite', true)->pluck('star_name')->toArray();
+        $notes = $user->notes()->get()->keyBy('star_name');
 
         return Inertia::render('StellarisHome', [
-            'sidebarList' => $discovered,
+            'sidebarList' => $sidebarList,
+            'constellationGroups' => $constellationGroups,
             'userNotes' => $notes,
+            'userFavorites' => $favorites,
             'auth' => ['user' => $user],
             'searchedStar' => null,
-            'flash' => session('flash') // For passing "New Discovery" flags
         ]);
     }
 
@@ -41,68 +41,88 @@ class StarController extends Controller
     {
         $query = $request->input('query');
         $isNewDiscovery = false;
+        
+        /** @var \App\Models\User $user */
+        $user = Auth::user();
 
-        // A. CHECK LOCAL DATABASE (Scoped to User)
-        $localStar = DiscoveredStar::where('name', $query)
-                        ->where('user_id', Auth::id()) // <--- Only check MY stars
-                        ->first();
+        // A. CHECK LOCAL DATABASE (Using User Input)
+        $localStar = DiscoveredStar::where('name', $query)->where('user_id', $user->id)->first();
 
         if ($localStar) {
-            $raw = $localStar->toArray(); // Use local data
+            $raw = $localStar->toArray();
+            if(!isset($raw['distance_light_year'])) $raw['distance_light_year'] = $raw['distance_ly'];
         } else {
-            // B. NOT FOUND LOCALLY? HIT THE API.
+            // B. HIT API
             $result = $api->fetchStars($query);
 
             if (!empty($result) && isset($result[0])) {
                 $raw = $result[0];
                 
-                // SAVE TO POXEDEX (Linked to this specific user)
-                DiscoveredStar::create([
-                    'user_id' => Auth::id(), // <--- Assign owner
-                    'name' => $raw['name'],
-                    'distance_ly' => $raw['distance_light_year'],
-                    'spectral_class' => $raw['spectral_class'],
-                    'constellation' => $raw['constellation'],
-                    'discovered_by' => Auth::user() ? Auth::user()->name : 'Anonymous'
-                ]);
-                
-                $isNewDiscovery = true; // Trigger the animation
+                // --- FIX: CHECK DB AGAIN WITH API NAME ---
+                // The API might return "Sirius A, B" even if you searched "Sirius".
+                // We must check if "Sirius A, B" exists to prevent a Duplicate Entry crash.
+                $existingStar = DiscoveredStar::where('user_id', $user->id)
+                                              ->where('name', $raw['name'])
+                                              ->first();
+
+                if (!$existingStar) {
+                    // It's truly new! Save it.
+                    DiscoveredStar::create([
+                        'user_id' => $user->id,
+                        'name' => $raw['name'],
+                        'distance_ly' => $raw['distance_light_year'],
+                        'spectral_class' => $raw['spectral_class'],
+                        'constellation' => $raw['constellation'] ?? 'Unknown Sector',
+                        'discovered_by' => $user->name
+                    ]);
+                    $isNewDiscovery = true;
+                } else {
+                    // It existed, just under a slightly different name than the user typed.
+                    // Use the existing data.
+                    $raw = $existingStar->toArray();
+                    if(!isset($raw['distance_light_year'])) $raw['distance_light_year'] = $raw['distance_ly'];
+                }
             } else {
-                // Not found in API either
                 return redirect()->back()->withErrors(['search' => 'TARGET_NOT_FOUND']);
             }
         }
 
-        // C. PREPARE DATA FOR FRONTEND
+        // C. PREPARE DATA
         $star = [
             'name' => $raw['name'],
-            'distance_ly' => $raw['distance_light_year'] ?? $raw['distance_ly'],
+            'distance_ly' => $raw['distance_light_year'],
             'spectral_class' => $raw['spectral_class'],
-            'constellation' => $raw['constellation'],
-            'temperature' => 'Unknown',
-            'mass' => 'N/A',
-            'diameter' => 'N/A',
+            'constellation' => $raw['constellation'] ?? 'Unknown Sector',
+            'temperature' => 'Unknown', 'mass' => 'N/A', 'diameter' => 'N/A',
             'color' => $this->getStarColor($raw['spectral_class'] ?? 'G'),
             'size_visual' => 2.5
         ];
 
-        // Refresh list (Scoped to User)
-        $sidebarList = DiscoveredStar::where('user_id', Auth::id())
-                        ->orderBy('name')
-                        ->pluck('name')
-                        ->toArray();
-        
-        /** @var \App\Models\User|null $user */
-        $user = Auth::user();
-        $notes = $user ? $user->notes()->get()->keyBy('star_name') : [];
+        $discoveredCollection = DiscoveredStar::where('user_id', $user->id)->orderBy('name')->get();
 
         return Inertia::render('StellarisHome', [
-            'sidebarList' => $sidebarList,
-            'userNotes' => $notes,
+            'sidebarList' => $discoveredCollection->pluck('name')->toArray(),
+            'constellationGroups' => $discoveredCollection->groupBy('constellation'),
+            'userNotes' => $user->notes()->get()->keyBy('star_name'),
+            'userFavorites' => $user->notes()->where('is_favorite', true)->pluck('star_name')->toArray(),
             'auth' => ['user' => $user],
             'searchedStar' => $star,
-            'isNewDiscovery' => $isNewDiscovery // Pass this flag to React
+            'isNewDiscovery' => $isNewDiscovery
         ]);
+    }
+
+    public function toggleFavorite(Request $request)
+    {
+        $validated = $request->validate(['star_name' => 'required|string']);
+        /** @var \App\Models\User $user */
+        $user = Auth::user();
+
+        $note = StarNote::firstOrNew(['user_id' => $user->id, 'star_name' => $validated['star_name']]);
+        $note->is_favorite = !$note->is_favorite;
+        if (!$note->story_chapter) $note->story_chapter = '';
+        $note->save();
+
+        return redirect()->back();
     }
 
     private function getStarColor($type) {
@@ -114,7 +134,6 @@ class StarController extends Controller
         };
     }
     
-    // ... Keep observatory, store, destroy ...
     public function observatory() {
         /** @var \App\Models\User $user */
         $user = Auth::user();

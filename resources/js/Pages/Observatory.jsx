@@ -31,7 +31,7 @@ export default function Observatory({ favorites }) {
                             href={route('home')} 
                             className="px-6 py-2 border border-white/20 text-xs font-mono tracking-widest hover:bg-white hover:text-black transition uppercase"
                         >
-                            ← Return to Bridge
+                            ← Return to Space
                         </Link>
                     </div>
 
@@ -57,7 +57,7 @@ export default function Observatory({ favorites }) {
                                             onClick={() => handleDelete(fav.star_name)}
                                             className="text-red-500/50 hover:text-red-400 text-xs font-mono uppercase border border-red-500/20 px-2 py-1 rounded hover:bg-red-500/10 transition"
                                         >
-                                            Purge
+                                            Removes
                                         </button>
                                     </div>
                                     <div className="p-4 bg-blue-900/10 rounded border-l-2 border-blue-500 text-gray-300 font-sans leading-relaxed text-sm">
