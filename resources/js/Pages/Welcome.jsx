@@ -57,17 +57,6 @@ export default function Welcome() {
                     </Canvas>
                 </div>
 
-                {/* Warp Overlay (Fade to White) */}
-                <AnimatePresence>
-                    {isWarping && (
-                        <motion.div 
-                            initial={{ opacity: 0 }}
-                            animate={{ opacity: 1 }}
-                            duration={1.5}
-                            className="absolute inset-0 bg-white z-[9999]"
-                        />
-                    )}
-                </AnimatePresence>
 
                 {/* UI Content */}
                 {!isWarping && (
@@ -91,7 +80,7 @@ export default function Welcome() {
                             transition={{ delay: 1 }}
                             className="text-blue-300 font-mono tracking-widest mt-4 uppercase text-sm"
                         >
-                            Deep Space Exploration Terminal
+                            Initializing Deep Space Travel
                         </motion.p>
 
                         <motion.button
