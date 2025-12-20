@@ -136,19 +136,22 @@ class StarController extends Controller
         $query = $request->input('query');
         $user = Auth::user();
 
-        // Call API
+        // 1. Call API
         $results = $api->fetchStars(['constellation' => $query]);
 
-        // FIX: Apply the same unique filter here
+        // CHECK IF RESULTS EXIST 
+        if (empty($results)) {
+            return redirect()->back()->withErrors(['search' => 'CONSTELLATION_NOT_FOUND']);
+        }
+
         $constellations = DiscoveredStar::where('user_id', $user->id)
                             ->whereNotNull('constellation')
-                            ->where('constellation', '!=', '')
-                            ->orderBy('constellation')
                             ->pluck('constellation')
+                            ->map(function ($name) { return trim(ucwords(strtolower($name))); })
                             ->unique()
                             ->values();
         
-        // Mark discovered stars
+        // 3. Mark discovered stars
         $myStars = DiscoveredStar::where('user_id', $user->id)
                     ->where('constellation', $query)
                     ->pluck('name')
