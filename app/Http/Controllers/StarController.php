@@ -111,12 +111,17 @@ class StarController extends Controller
     public function constellationIndex()
     {
         $user = Auth::user();
+
+        // Fetch, Normalize, then Unique
         $constellations = DiscoveredStar::where('user_id', $user->id)
-                            ->select('constellation')
-                            ->distinct()
                             ->whereNotNull('constellation')
-                            ->orderBy('constellation')
-                            ->pluck('constellation');
+                            ->pluck('constellation')
+                            ->map(function ($name) {
+                                // Force everything to Title Case for display (e.g. "Orion")
+                                return trim(ucwords(strtolower($name))); 
+                            })
+                            ->unique()
+                            ->values();
 
         return Inertia::render('ConstellationMap', [
             'sidebarList' => $constellations,
@@ -130,14 +135,20 @@ class StarController extends Controller
     {
         $query = $request->input('query');
         $user = Auth::user();
+
+        // Call API
         $results = $api->fetchStars(['constellation' => $query]);
 
+        // FIX: Apply the same unique filter here
         $constellations = DiscoveredStar::where('user_id', $user->id)
-                            ->select('constellation')
-                            ->distinct()
+                            ->whereNotNull('constellation')
+                            ->where('constellation', '!=', '')
                             ->orderBy('constellation')
-                            ->pluck('constellation');
+                            ->pluck('constellation')
+                            ->unique()
+                            ->values();
         
+        // Mark discovered stars
         $myStars = DiscoveredStar::where('user_id', $user->id)
                     ->where('constellation', $query)
                     ->pluck('name')
