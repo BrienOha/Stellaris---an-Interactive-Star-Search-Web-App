@@ -45,7 +45,7 @@ class StarController extends Controller
         /** @var \App\Models\User $user */
         $user = Auth::user();
 
-        // A. CHECK LOCAL DATABASE (Using User Input)
+        // CHECK LOCAL DATABASE 
         $localStar = DiscoveredStar::where('name', $query)->where('user_id', $user->id)->first();
 
         if ($localStar) {
@@ -58,13 +58,12 @@ class StarController extends Controller
             if (!empty($result) && isset($result[0])) {
                 $raw = $result[0];
                 
-                // --- FIX: CHECK DB AGAIN WITH API NAME ---
+                // CHECK DB WITH API NAME ---
                 $existingStar = DiscoveredStar::where('user_id', $user->id)
                                               ->where('name', $raw['name'])
                                               ->first();
 
                 if (!$existingStar) {
-                    // It's truly new! Save it.
                     DiscoveredStar::create([
                         'user_id' => $user->id,
                         'name' => $raw['name'],
@@ -83,7 +82,7 @@ class StarController extends Controller
             }
         }
 
-        // C. PREPARE DATA
+        // PREPARE DATA
         $star = [
             'name' => $raw['name'],
             'distance_ly' => $raw['distance_light_year'],
@@ -107,12 +106,11 @@ class StarController extends Controller
         ]);
     }
 
-    // --- NEW CONSTELLATION METHODS START ---
+    // CONSTELLATIONS
 
     public function constellationIndex()
     {
         $user = Auth::user();
-        // Get unique constellations found by the user
         $constellations = DiscoveredStar::where('user_id', $user->id)
                             ->select('constellation')
                             ->distinct()
@@ -132,8 +130,6 @@ class StarController extends Controller
     {
         $query = $request->input('query');
         $user = Auth::user();
-
-        // Call API with 'constellation' parameter
         $results = $api->fetchStars(['constellation' => $query]);
 
         $constellations = DiscoveredStar::where('user_id', $user->id)
@@ -142,7 +138,6 @@ class StarController extends Controller
                             ->orderBy('constellation')
                             ->pluck('constellation');
         
-        // Mark which stars are already discovered
         $myStars = DiscoveredStar::where('user_id', $user->id)
                     ->where('constellation', $query)
                     ->pluck('name')
@@ -190,7 +185,8 @@ class StarController extends Controller
 
         return redirect()->back();
     }
-    // --- NEW CONSTELLATION METHODS END ---
+
+    // FAVORITE SECTION
 
     public function toggleFavorite(Request $request)
     {
