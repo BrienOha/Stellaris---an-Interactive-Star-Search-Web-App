@@ -13,7 +13,7 @@ export default function Observatory({ favorites }) {
     };
 
     return (
-        <CosmicLayout> {/* WRAPPER FOR CURSOR */}
+        <CosmicLayout> 
             <Head title="Observatory" />
             
             <div className="min-h-screen p-8 pt-20">
@@ -26,7 +26,6 @@ export default function Observatory({ favorites }) {
                             <p className="text-blue-400/60 font-mono mt-1">/// ARCHIVED DISCOVERIES</p>
                         </div>
                         
-                        {/* FIX: Link goes to 'home' route, not '/' */}
                         <Link 
                             href={route('home')} 
                             className="px-6 py-2 border border-white/20 text-xs font-mono tracking-widest hover:bg-white hover:text-black transition uppercase"
@@ -35,7 +34,6 @@ export default function Observatory({ favorites }) {
                         </Link>
                     </div>
 
-                    {/* List */}
                     {favorites.length === 0 ? (
                         <div className="h-64 flex flex-col items-center justify-center border border-dashed border-white/10 rounded-lg bg-white/5">
                             <p className="text-gray-500 font-mono text-lg">NO DATA FOUND</p>
@@ -57,7 +55,7 @@ export default function Observatory({ favorites }) {
                                             onClick={() => handleDelete(fav.star_name)}
                                             className="text-red-500/50 hover:text-red-400 text-xs font-mono uppercase border border-red-500/20 px-2 py-1 rounded hover:bg-red-500/10 transition"
                                         >
-                                            Removes
+                                            Remove
                                         </button>
                                     </div>
                                     <div className="p-4 bg-blue-900/10 rounded border-l-2 border-blue-500 text-gray-300 font-sans leading-relaxed text-sm">

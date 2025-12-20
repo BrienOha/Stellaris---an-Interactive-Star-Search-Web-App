@@ -6,20 +6,17 @@ import { Stars } from '@react-three/drei';
 import { motion, AnimatePresence } from 'framer-motion';
 import * as THREE from 'three';
 
-// 1. The Warp Star System
 const WarpStars = ({ isWarping }) => {
     const ref = useRef();
     
     useFrame((state, delta) => {
-        // Normal Rotation
         if (!isWarping) {
             ref.current.rotation.y += delta * 0.1;
             ref.current.rotation.x += delta * 0.05;
         } 
-        // WARP SPEED: Stretch and Zoom
         else {
-            ref.current.rotation.z += delta * 2; // Spin
-            ref.current.position.z += delta * 50; // Fly forward
+            ref.current.rotation.z += delta * 2; 
+            ref.current.position.z += delta * 50; 
         }
     });
 
@@ -33,22 +30,19 @@ const WarpStars = ({ isWarping }) => {
 export default function Welcome() {
     const [isWarping, setWarping] = useState(false);
 
-    // --- AUDIO LOGIC START ---
     const [audioEnabled, setAudioEnabled] = useState(false);
     const musicRef = useRef(null);
 
     useEffect(() => {
-        // Initialize Music
         musicRef.current = new Audio('/audio/space_music.mp3');
         musicRef.current.loop = true;
-        musicRef.current.volume = 0.4; // Adjust volume here
+        musicRef.current.volume = 0.4; 
 
-        // Attempt Auto-play
         musicRef.current.play()
             .then(() => setAudioEnabled(true))
             .catch(() => console.log("Auto-play blocked, waiting for interaction"));
 
-        // Cleanup on exit
+
         return () => { 
             if(musicRef.current) musicRef.current.pause(); 
         };
@@ -63,21 +57,18 @@ export default function Welcome() {
             setAudioEnabled(false);
         }
     };
-    // --- AUDIO LOGIC END ---
 
     const handleStart = (e) => {
         e.preventDefault();
         
-        // Ensure music is playing for the warp effect if user hadn't unmuted yet
         if (musicRef.current && !audioEnabled) {
              musicRef.current.play().catch(e => {});
         }
 
         setWarping(true);
         
-        // Wait 1.5 seconds for the warp animation, then navigate
         setTimeout(() => {
-            router.visit(route('login')); // Or 'star.index' depending on your flow
+            router.visit(route('login')); 
         }, 1500);
     };
 
@@ -86,20 +77,18 @@ export default function Welcome() {
             <CosmicLayout>
                 <Head title="Welcome" />
 
-                {/* 3D Scene */}
                 <div className="absolute inset-0 z-0">
                     <Canvas camera={{ position: [0, 0, 10], fov: 60 }}>
                         <WarpStars isWarping={isWarping} />
-                        {/* Add motion blur streaks during warp (simulated by opacity) */}
+                    
                         {isWarping && <fog attach="fog" args={['#ffffff', 0, 20]} />}
                     </Canvas>
                 </div>
 
-                {/* UI Content */}
                 <AnimatePresence>
                     {!isWarping && (
                         <motion.div 
-                            exit={{ opacity: 0, scale: 2, filter: 'blur(10px)' }} // Added blur for speed effect
+                            exit={{ opacity: 0, scale: 2, filter: 'blur(10px)' }} 
                             transition={{ duration: 0.5 }}
                             className="relative z-10 flex flex-col items-center justify-center h-screen"
                         >
@@ -135,7 +124,6 @@ export default function Welcome() {
                     )}
                 </AnimatePresence>
 
-                {/* MUSIC TOGGLE (Bottom Left) - Hides during Warp */}
                 {!isWarping && (
                     <div className="absolute bottom-6 left-6 z-50">
                         <button 

@@ -22,10 +22,8 @@ class StarApiService
                 $params['max_magnitude'] = 4;
             }
 
-            // FORCE LIMIT: API-Ninjas usually allows up to 30-50 per call. 
-            // We request 100, but the API might cap it at its internal max.
             if (!isset($params['limit'])) {
-                $params['limit'] = 100; 
+                $params['limit'] = 40; 
             }
 
             /** @var Response $response */

@@ -8,23 +8,20 @@ export default function ConstellationMap({ sidebarList, searchedConstellation, s
     const { data, setData, get, processing } = useForm({ query: searchedConstellation || '' });
     const [lastAdded, setLastAdded] = useState(null);
 
-    // --- AUDIO LOGIC START ---
     const [audioEnabled, setAudioEnabled] = useState(false);
     const musicRef = useRef(null);
 
     useEffect(() => {
-        // Initialize Music (Reusing the ambient track)
+       
         musicRef.current = new Audio('/audio/space_ambient.mp3');
         musicRef.current.loop = true;
-        musicRef.current.volume = 0.4; // Adjust volume here
+        musicRef.current.volume = 0.4; 
 
-        // Attempt Auto-play
-        // Browsers often block this until the user interacts with the page
         musicRef.current.play()
             .then(() => setAudioEnabled(true))
             .catch(() => console.log("Auto-play blocked, waiting for interaction"));
 
-        // Cleanup on exit
+
         return () => { 
             if(musicRef.current) {
                 musicRef.current.pause();
@@ -45,7 +42,6 @@ export default function ConstellationMap({ sidebarList, searchedConstellation, s
             setAudioEnabled(false);
         }
     };
-    // --- AUDIO LOGIC END ---
 
     const handleSearch = (e) => {
         e.preventDefault();
@@ -68,7 +64,6 @@ export default function ConstellationMap({ sidebarList, searchedConstellation, s
 
     const loadConstellation = (name) => {
         setData('query', name);
-        // Slight delay to allow state update before fetch
         setTimeout(() => {
             router.get(route('constellation.search'), { query: name });
         }, 50);
@@ -88,7 +83,6 @@ export default function ConstellationMap({ sidebarList, searchedConstellation, s
                     />
                 </div>
 
-                {/* Top Search */}
                 <div className="absolute top-0 left-0 w-full p-6 z-20 flex flex-col items-center pointer-events-none">
                     <div className="pointer-events-auto w-full max-w-xl">
                         <form onSubmit={handleSearch} className="relative group">
@@ -105,7 +99,6 @@ export default function ConstellationMap({ sidebarList, searchedConstellation, s
                         </form>
                     </div>
 
-                    {/* Success Message */}
                     <AnimatePresence>
                         {lastAdded && (
                             <motion.div 
@@ -121,7 +114,6 @@ export default function ConstellationMap({ sidebarList, searchedConstellation, s
                     </AnimatePresence>
                 </div>
 
-                {/* Sidebar (Found Constellations) */}
                 <div className="fixed left-9 top-24 bottom-6 z-40 flex items-center pointer-events-none">
                     <div className="w-72 h-full bg-[#050714]/90 backdrop-blur-xl border-r border-purple-500/50 shadow-[0_0_30px_rgba(168,85,247,0.2)] transform -translate-x-[17.5rem] hover:translate-x-0 transition-transform duration-500 flex flex-col overflow-hidden group pointer-events-auto">
                         <div className="absolute right-0 top-0 bottom-0 w-3 bg-purple-900/20 hover:bg-purple-600/20 cursor-pointer flex items-center justify-center transition-colors">
@@ -145,7 +137,6 @@ export default function ConstellationMap({ sidebarList, searchedConstellation, s
                     </div>
                 </div>
 
-                {/* AUDIO TOGGLE (Bottom Left) */}
                 <div className="fixed top-6 left-12 z-50">
                     <button
                         onClick={toggleMusic}
@@ -163,7 +154,6 @@ export default function ConstellationMap({ sidebarList, searchedConstellation, s
                     </button>
                 </div>
 
-                {/* Navigation Back (Bottom Right) */}
                 <div className="absolute bottom-6 right-6 z-50">
                      <button onClick={() => router.visit(route('home'))} className="px-8 py-3 bg-black/60 border border-white/20 hover:border-blue-400 text-gray-400 hover:text-white font-mono tracking-widest uppercase rounded transition">
                         Return to Star Map
